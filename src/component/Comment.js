@@ -9,9 +9,10 @@ import {
 	Image,
 	Dimensions,
 	TouchableOpacity,
+	Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import HTMLView from 'react-native-htmlview';
 const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
@@ -22,14 +23,10 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#eee',
 		borderBottomWidth: 1,
 		flexDirection: 'row',
-		paddingHorizontal: 10,
+		width: width
 	},
 	icon: {
 		marginLeft:5,
-	},
-	comments: {
-		flexDirection: 'row',
-		width: width
 	},
 	avatar: {
 		height: 20,
@@ -46,7 +43,7 @@ const styles = StyleSheet.create({
 	}
 	,
 	username: {
-		color: '#555',
+		color: '#406599',
 		fontWeight: '500',
 	},
 	flow_number: {
@@ -65,7 +62,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row'
 	},
 	cm_detail: {
-		color: '#222',
+		width : width-40,
 	},
 	up_text: {
 		marginLeft:2,
@@ -75,40 +72,58 @@ const styles = StyleSheet.create({
 	time_text: {
 		fontSize:12,
 		color: 'gray'
-	}
+	},
+	emoji: {
+		height: 14,
+		width: 14,
+	},
 });
+
+const content_detail = StyleSheet.create({
+
+
+});
+function renderNode(node, index, siblings, parent, defaultRenderer) {
+	if (node.name === 'img') {
+		const img = node.attribs;
+		const imgContent = "https://www.shiqidu.com" + img.src;
+		console.log(imgContent);
+		return (
+			<Image source={{uri: imgContent}} style={styles.emoji} />
+		);
+	}
+}
 
 const Comments = (props)=>{
 	const { username, avatar, post_time, contents, up, flow_number } = props;
 	return (
 		<TouchableOpacity>
 			<View style={styles.root}>
-				<View style={styles.comments}>
-					<View style={styles.left}>
-						<Image source={{uri: avatar}} style={styles.avatar} />
+				<View style={styles.left}>
+					<Image source={{uri: avatar}} style={styles.avatar} />
+				</View>
+				<View style={styles.right}>
+					<View style={styles.rightTop}>
+						<Text style={styles.username}>{username}</Text>
+						<View style={styles.flow_number}>
+							<Icon name="ios-thumbs-up-outline" size={14} color={'gray'} style={styles.icon} />
+							<Text style={styles.up_text}>{up}</Text>
+						</View>
 					</View>
-					<View style={styles.right}>
-						<View style={styles.rightTop}>
-							<Text style={styles.username}>{username}</Text>
-							<View style={styles.flow_number}>
-								<Icon name="ios-thumbs-up-outline" size={14} color={'gray'} style={styles.icon} />
-								<Text style={styles.up_text}>{up}</Text>
-							</View>
-						</View>
-						<View style={styles.rightMiddle}>
-							<Text style={styles.cm_detail}>
-								{contents}
-							</Text>
-						</View>
-						<View style={styles.rightBottom}>
-							<Text style={styles.flow_number_text}>{flow_number}楼 · </Text>
-							<Text style={styles.time_text}>{post_time} </Text>
-							<Icon name="ios-redo" size={14} color={'gray'} style={styles.icon} />
-							<Text style={styles.up_text}>回复</Text>
-						</View>
+					<View style={[styles.rightMiddle,styles.cm_detail]}>
+						<HTMLView
+							value={contents}
+							renderNode={renderNode}
+							stylesheet={content_detail}
+						/>
+					</View>
+					<View style={styles.rightBottom}>
+						<Text style={styles.flow_number_text}>{flow_number}楼 · </Text>
+						<Text style={styles.time_text}>{post_time} </Text>
+						<Icon name="ios-redo" size={14} color={'gray'} style={styles.icon} />
+						<Text style={styles.up_text}>回复</Text>
 					</View>
 				</View>
-
 			</View>
 		</TouchableOpacity>
 	);

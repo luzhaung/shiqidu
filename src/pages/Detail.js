@@ -18,10 +18,9 @@ import {
 	Platform
 } from 'react-native';
 
-import HTMLView from 'react-native-htmlview';
 import Markdown from 'react-native-simple-markdown'
 import Icon from 'react-native-vector-icons/FontAwesome';
-import {DetailUrl} from '../def/Api';
+import {DetailUrl,CommentlUrl} from '../def/Api';
 import {PRIMARY_COLOR} from '../def/Color';
 import { AppColors, AppSizes, AppFonts } from '../style';
 import Item from '../component/Comment';
@@ -109,8 +108,40 @@ const styles = StyleSheet.create({
 		right: 0,
 	},
 	comments: {
-		marginTop: 20,
-		backgroundColor: '#fff'
+		backgroundColor: '#fff',
+		borderTopColor: '#eee',
+		borderTopWidth: 1,
+	},
+	article_bottom_bar: {
+		backgroundColor: '#ebebeb',
+		height: 20,
+		borderRadius: 2,
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	ar_up: {
+		marginLeft: 5,
+		fontSize: 12,
+	},
+	keywords: {
+		marginVertical: 10,
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	keywords_cell: {
+		backgroundColor: '#ebebeb',
+		paddingVertical: 2,
+		paddingHorizontal: 5,
+		borderRadius: 3,
+		marginRight: 5,
+	},
+	keywords_cell_text: {
+		color: '#778087',
+	},
+	comment_bar:{
+		flexDirection: 'row',
+		marginBottom: 5,
 	}
 });
 
@@ -147,7 +178,11 @@ export default class Detail extends Component{
 		click: 0,
 		commentNum: 0,
 		tag_cn_name: '',
+		up: 0,
+		fee_user_num: 0,
+		keywords_arr: [],
 		comments: {},
+		comments_ready: false,
 		loading: false,
 	};
 
@@ -181,11 +216,27 @@ export default class Detail extends Component{
 				author_info: jsonData.data.author_info,
 				addTime: jsonData.data.addTime,
 				click: jsonData.data.click,
-				commentNum: jsonData.data.comment_num ? jsonData.data.comment_num : 0,
 				tag_cn_name: jsonData.data.tag_cn_name,
-				comments: jsonData.data.comments,
+				up: jsonData.data.up,
+				fee_user_num: jsonData.data.fee_user_num,
+				keywords_arr: jsonData.data.keywords_arr,
 				ready: true,
-			})
+			});
+
+			// 获取文章评论信息
+			const comments = await fetch(`${CommentlUrl}?id=${id}`);
+			textData = await comments.text();
+			jsonData = JSON.parse(textData);
+			if (jsonData.status === -1){
+				this.setState({comments_ready : true,});
+				Alert.alert('评论加载失败!');
+			}else{
+				this.setState({
+					commentNum: jsonData.data.comment_num,
+					comments: jsonData.data.comments,
+					comments_ready : true,
+				})
+			}
 		}
 	}
 
@@ -205,7 +256,7 @@ export default class Detail extends Component{
 			buttonBorderRadius = 5;
 		}
 		const { params,goBack } = this.props.navigation.state;
-		const { datas, ready, html_data, author_info,addTime,click,commentNum,tag_cn_name,comments } = this.state;
+		const { datas, ready, html_data, author_info,addTime,click,commentNum,tag_cn_name,up,fee_user_num,keywords_arr } = this.state;
 		return (
 			<ScrollView style={styles.row}>
 				<View>
@@ -233,28 +284,53 @@ export default class Detail extends Component{
 						<Text numberOfLines={1} style={styles.tagName}>{tag_cn_name}</Text>
 					</View>
 				</View>
-				{
-					this.contents()
-				}
-				<View style={styles.comments}>
-					<FlatList
-						keyExtractor={item => item.id}
-						data={comments}
-						renderItem={
-							({item}) => <Item
-								username={item.comm_username}
-								avatar={'https://www.shiqidu.com'+item.comm_avatar_src}
-								post_time={item.timeDiff}
-								contents={item.contents}
-								up={item.up}
-								flow_number={item.flow_number}
-							/>
-						}
-					/>
+				{this.contents()}
+				<View style={styles.article_bottom_bar}>
+					<Icon name="chevron-up" size={12} color={'gray'} style={styles.icon} />
+					<Text style={styles.ar_up}>{up}</Text>
+					<Icon name="heart" size={12} color={'gray'} style={[styles.icon,{marginLeft: 10,}]} />
+					<Text style={styles.ar_up}>{fee_user_num}</Text>
+					<Text style={{position:'absolute',right:5,color:'gray',fontSize:12}}>举报</Text>
 				</View>
+				<View style={styles.keywords}>
+					{
+						keywords_arr.map((name,index)=>{
+							return <TouchableOpacity key={index} style={styles.keywords_cell}>
+								<Text style={styles.keywords_cell_text}>{name}</Text>
+							</TouchableOpacity>
+						})
+					}
+				</View>
+				<View style={styles.comment_bar}>
+					<Icon name="comments" size={16} color={'#f33'} style={[styles.icon,{marginRight: 5,}]} />
+					<Text style={{fontSize:12}}>{commentNum} 条评论</Text>
+				</View>
+				{this.comments()}
 			</ScrollView>
 		)
 	}
+
+	comments = ()=>{
+		const {datas, ready, html_data, author_info,addTime,click,commentNum,tag_cn_name,comments,comments_ready} = this.state;
+
+		return comments_ready ? <View style={styles.comments}>
+			<FlatList
+				keyExtractor={item => item.id}
+				data={comments}
+				renderItem={
+					({item}) => <Item
+						username={item.comm_username}
+						avatar={'https://www.shiqidu.com'+item.comm_avatar_src}
+						post_time={item.timeDiff}
+						contents={item.contents}
+						up={item.up}
+						flow_number={item.flow_number}
+					/>
+				}
+			/>
+		</View> : <ActivityIndicator size="large" style={styles.loading} />;
+
+	};
 
 	contents = ()=>{
 		const { datas, ready, html_data, author_info } = this.state;
